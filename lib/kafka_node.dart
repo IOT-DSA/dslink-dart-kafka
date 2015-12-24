@@ -10,6 +10,8 @@ import 'package:kafka/kafka.dart';
 
 import 'src/kafka_client.dart';
 
+part 'src/topics_node.dart';
+
 class AddConnection extends SimpleNode {
   static const String isType = 'addConnectionNode';
   static const String pathName = 'Add_Connection';
@@ -48,7 +50,6 @@ class AddConnection extends SimpleNode {
 
   @override
   Future onInvoke(Map<String, dynamic> params) async {
-    print('Add Params: $params');
     if (params['name'] == null || params['name'].isEmpty ||
         params['address'] == null || params['address'].isEmpty) {
       return;
@@ -56,14 +57,14 @@ class AddConnection extends SimpleNode {
 
     var parPath = parent.path;
     var name = NodeNamer.createName(params['name']);
-    provider.addNode('$parPath/$name', KafkaNode.definition(params));
+    provider.addNode('/$name', KafkaNode.definition(params));
     link.save();
   }
 }
 
 class EditConnection extends SimpleNode {
   static const String isType = 'editConnectionNode';
-  static const String pathName = 'Edit_Connection';
+  static final String pathName = 'Edit_Connection';
   static Map<String, dynamic> definition(Map params) => {
     r'$is' : isType,
     r'$invokable' : 'write',
@@ -116,13 +117,35 @@ class EditConnection extends SimpleNode {
   }
 }
 
+class RemoveConnection extends SimpleNode {
+  static const isType = 'removeConnectionNode';
+  static const pathName = 'Remove_Connection';
+  static Map<String, dynamic> definition() => {
+    r'$is' : isType,
+    r'$invokable' : 'write',
+    r'$name' : 'Remove Connection',
+    r'$params' : [],
+    r'$columsn' : []
+  };
+
+  RemoveConnection(String path) : super(path);
+
+  @override
+  Map onInvoke(Map params) {
+    provider.removeNode(parent.path);
+    return {};
+  }
+}
+
 class KafkaNode extends SimpleNode {
   static const String isType = 'kafkaNode';
   static Map<String, dynamic> definition(Map params) => {
     r'$is' : isType,
     r'$$kafka_address' : params['address'],
     r'$$kafka_port' : params['port'],
-    EditConnection.pathName : EditConnection.definition(params)
+    EditConnection.pathName : EditConnection.definition(params),
+    RemoveConnection.pathName : RemoveConnection.definition(),
+    AddTopic.pathName : AddTopic.definition()
   };
 
   KafkaClient client;
@@ -135,7 +158,6 @@ class KafkaNode extends SimpleNode {
     var addr = getConfig(r'$$kafka_address');
     var port = int.parse(getConfig(r'$$kafka_port'));
 
-    print('KafkaNode Config: $configs');
     client = new KafkaClient(addr, port);
   }
 
@@ -144,6 +166,12 @@ class KafkaNode extends SimpleNode {
     configs[r'$$kafka_port'] = params['port'];
 
     client = client.update(params['address'], int.parse(params['port']));
+    link.save();
+  }
+
+  @override
+  void onRemoving() {
+    client.close();
     link.save();
   }
 }

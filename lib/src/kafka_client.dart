@@ -1,8 +1,11 @@
 library dslink.kafka.client;
 
+import 'dart:async';
 import 'dart:math' show Random;
 
 import 'package:kafka/kafka.dart';
+
+import 'package:dslink/utils.dart';
 
 class KafkaClient {
   static final Map<String, KafkaClient> _cache = <String, KafkaClient>{};
@@ -11,6 +14,7 @@ class KafkaClient {
   KafkaSession _session;
   ConsumerGroup _cGroup;
   int _randNum;
+  List<String> _validTopics;
 
   factory KafkaClient(String host, int port) =>
     _cache.putIfAbsent('$host$port', () => new KafkaClient._(host, port));
@@ -22,6 +26,16 @@ class KafkaClient {
     _host = new ContactPoint(host, port);
     _session = new KafkaSession([_host]);
     _cGroup = new ConsumerGroup(_session, 'kafkaDSLink$_randNum');
+    kafkaLogger.level = logger.level;
+    kafkaLogger.onRecord.listen((log) {
+      print(log.message);
+    });
+
+    _session.getMetadata().then((MetadataResponse resp) {
+      _validTopics = resp.topics.map((top) => top.topicName).toList();
+    }).catchError((e) {
+      logger.warning('Error retrieving Metadata', e);
+    });
   }
 
   KafkaClient update(String host, int port) {
@@ -30,5 +44,32 @@ class KafkaClient {
     _session.close();
     _cache.remove(curKey);
     return new KafkaClient(host, port);
+  }
+
+  void close() {
+    _session.close();
+  }
+
+  Stream<String> subscribe(String topic, List partitions) async* {
+    var topics = { topic : partitions };
+    logger.finest('Subscribing to: $topic');
+
+    if (!_validTopics.contains(topic)) {
+      logger.fine('Unable to subscribe, no such topic: $topic');
+      throw new StateError('No topic: $topic');
+    }
+
+    print('About to try subscribbing');
+    try {
+      var consumer = new Consumer(_session, _cGroup, topics, 360, 1);
+      await for (MessageEnvelope env in consumer.consume()) {
+        var value = new String.fromCharCodes(env.message.value);
+        print('Received value: $value');
+        env.ack();
+        yield value;
+      }
+    } catch (e) {
+      logger.warning('Error subscribing', e);
+    }
   }
 }
