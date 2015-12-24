@@ -1,0 +1,6 @@
+name: dslink_kafka
+description: Kafka DSLink
+dependencies:
+  dslink: ^0.5.1
+  kafka:
+    git: https://github.com/pulyaevskiy/dart-kafka.git
