@@ -125,7 +125,7 @@ class RemoveConnection extends SimpleNode {
     r'$invokable' : 'write',
     r'$name' : 'Remove Connection',
     r'$params' : [],
-    r'$columsn' : []
+    r'$columns' : []
   };
 
   LinkProvider link;
@@ -147,7 +147,8 @@ class KafkaNode extends SimpleNode {
     r'$$kafka_port' : params['port'],
     EditConnection.pathName : EditConnection.definition(params),
     RemoveConnection.pathName : RemoveConnection.definition(),
-    AddTopic.pathName : AddTopic.definition()
+    AddTopic.pathName : AddTopic.definition(),
+    PublishMessage.pathName : PublishMessage.definition(),
   };
 
   KafkaClient client;

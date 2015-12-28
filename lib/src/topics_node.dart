@@ -103,3 +103,60 @@ class TopicNode extends SimpleNode {
     _subscription.cancel();
   }
 }
+
+class PublishMessage extends SimpleNode {
+  static const String isType = 'publishMessageNode';
+  static const String pathName = 'Publish_Message';
+  static Map<String, dynamic> definition() => {
+    r'$is' : isType,
+    r'$name' : 'Publish message',
+    r'$invokable' : 'write',
+    r'$params' : [
+      {
+        'name' : 'topic',
+        'type' : 'string',
+        'placeholder' : 'Topic'
+      },
+      {
+        'name' : 'partition',
+        'type' : 'int',
+        'default' : 0
+      },
+      {
+        'name' : 'message',
+        'type' : 'string',
+        'placeholder' : 'Message'
+      }
+    ],
+    r'$columns' : [
+      {
+        'name' : 'success',
+        'type' : 'bool',
+        'default' : false
+      },
+      {
+        'name' : 'message',
+        'type' : 'string',
+        'default' : ''
+      }
+    ]
+  };
+
+  PublishMessage(String path) : super(path);
+
+  @override
+  Future<Map> onInvoke(Map<String, dynamic> params) async {
+    if (params['topic'] == null || params['topic'].isEmpty) {
+      return {'success' : false, 'message' : 'Topic is required.'};
+    }
+
+    var client = (parent as KafkaNode).client;
+    var partition = int.parse(params['partition'], onError: (_) => 0);
+
+    try {
+      return await client.publish(params['topic'], partition, params['message']);
+    } catch (e, s) {
+      logger.warning('Error publishing', e, s);
+    }
+  }
+}

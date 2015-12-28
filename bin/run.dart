@@ -15,6 +15,7 @@ Future main(List<String> args) async {
         RemoveConnection.isType : (String path) => new RemoveConnection(link, path),
         KafkaNode.isType : (String path) => new KafkaNode(link, path),
         AddTopic.isType : (String path) => new AddTopic(path),
+        PublishMessage.isType : (String path) => new PublishMessage(path),
         RemoveTopicNode.isType : (String path) => new RemoveTopicNode(path),
         TopicNode.isType : (String path) => new TopicNode(path),
       }, encodePrettyJson: true);

@@ -5,7 +5,7 @@ import 'dart:math' show Random;
 
 import 'package:kafka/kafka.dart';
 
-import 'package:dslink/utils.dart';
+import 'package:dslink/utils.dart' show logger;
 
 class KafkaClient {
   static final Map<String, KafkaClient> _cache = <String, KafkaClient>{};
@@ -14,6 +14,7 @@ class KafkaClient {
   KafkaSession _session;
   ConsumerGroup _cGroup;
   int _randNum;
+  Producer _producer;
 
   factory KafkaClient(String host, int port) =>
       _cache.putIfAbsent('$host$port', () => new KafkaClient._(host, port));
@@ -60,5 +61,29 @@ class KafkaClient {
       logger.warning('Error subscribing', e);
       rethrow;
     }
+  }
+
+  Future<Map> publish(String topic, int partition, String message) async {
+    if (_producer == null) {
+      _producer = new Producer(_session, 1, 360);
+    }
+
+    var ret = {};
+    var result = await _producer.produce([
+      new ProduceEnvelope(topic, partition, [new Message(message.codeUnits)])
+    ]);
+
+    if (result.hasErrors) {
+      ret['success'] = false;
+      ret['message'] = 'Publishing encountered an error';
+      logger.fine('Publish encountered errors');
+      result.responses.forEach((pr) {
+        logger.finest(pr.toString());
+      });
+    } else {
+      ret['success'] = true;
+      ret['message'] = 'Success';
+    }
+    return ret;
   }
 }
