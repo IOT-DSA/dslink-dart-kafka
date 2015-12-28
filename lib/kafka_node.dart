@@ -128,11 +128,13 @@ class RemoveConnection extends SimpleNode {
     r'$columsn' : []
   };
 
-  RemoveConnection(String path) : super(path);
+  LinkProvider link;
+  RemoveConnection(this.link, String path) : super(path);
 
   @override
   Map onInvoke(Map params) {
     provider.removeNode(parent.path);
+    link.save();
     return {};
   }
 }
@@ -171,7 +173,11 @@ class KafkaNode extends SimpleNode {
 
   @override
   void onRemoving() {
+    forEachChild((name, node) {
+      if (node is TopicNode) {
+        node.onRemoving();
+      }
+    });
     client.close();
-    link.save();
   }
 }

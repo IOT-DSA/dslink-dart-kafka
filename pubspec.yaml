@@ -3,4 +3,6 @@ description: Kafka DSLink
 dependencies:
   dslink: ^0.5.1
   kafka:
-    git: https://github.com/pulyaevskiy/dart-kafka.git
+    git:
+      url: https://github.com/pulyaevskiy/dart-kafka.git
+      ref: handle-errors-in-consumer-stream

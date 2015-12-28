@@ -12,7 +12,7 @@ Future main(List<String> args) async {
       profiles: {
         AddConnection.isType : (String path) => new AddConnection(link, path),
         EditConnection.isType : (String path) => new EditConnection(path),
-        RemoveConnection.isType : (String path) => new RemoveConnection(path),
+        RemoveConnection.isType : (String path) => new RemoveConnection(link, path),
         KafkaNode.isType : (String path) => new KafkaNode(link, path),
         AddTopic.isType : (String path) => new AddTopic(path),
         RemoveTopicNode.isType : (String path) => new RemoveTopicNode(path),
