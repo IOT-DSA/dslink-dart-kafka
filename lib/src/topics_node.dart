@@ -48,6 +48,25 @@ class AddTopic extends SimpleNode {
   }
 }
 
+class RemoveTopicNode extends SimpleNode {
+  static const isType = 'removeTopicNode';
+  static const pathName = 'Remove_Subscription';
+  static Map<String, dynamic> definition() => {
+    r'$is' : isType,
+    r'$name' : 'Remove Subscription',
+    r'$invokable' : 'write',
+    r'$params' : [],
+    r'$columns' : []
+  };
+
+  RemoveTopicNode(String path) : super(path);
+
+  @override
+  dynamic onInvoke(Map params) {
+    provider.removeNode(parent.path);
+  }
+}
+
 class TopicNode extends SimpleNode {
   static const String isType = 'topicSubscriptionNode';
   static Map<String, dynamic> definition(Map params) => {
@@ -55,12 +74,14 @@ class TopicNode extends SimpleNode {
     r'$$kafka_topic' : params['topic'],
     r'$$kafka_part' : params['part'],
     r'$type' : 'string',
-    r'?value': ''
+    r'?value': '',
+    RemoveTopicNode.pathName : RemoveTopicNode.definition()
   };
 
   KafkaClient _client;
   String _topic;
   List<int> _partitions;
+  StreamSubscription _subscription;
   TopicNode(String path) : super(path);
 
   @override
@@ -70,10 +91,15 @@ class TopicNode extends SimpleNode {
     _topic = getConfig(r'$$kafka_topic');
     _partitions = getConfig(r'$$kafka_part');
 
-    _client.subscribe(_topic, _partitions).listen((String val) {
+    _subscription = _client.subscribe(_topic, _partitions).listen((String val) {
       updateValue(val);
     }, onError: (e) {
-      this.remove();
     });
+  }
+
+  @override
+  void onRemoving() {
+    logger.finest('Removing subscriptiong $_topic');
+    _subscription.cancel();
   }
 }

@@ -14,10 +14,9 @@ class KafkaClient {
   KafkaSession _session;
   ConsumerGroup _cGroup;
   int _randNum;
-  List<String> _validTopics;
 
   factory KafkaClient(String host, int port) =>
-    _cache.putIfAbsent('$host$port', () => new KafkaClient._(host, port));
+      _cache.putIfAbsent('$host$port', () => new KafkaClient._(host, port));
 
   KafkaClient._(String host, int port) {
     var seed = new DateTime.now().millisecond ~/ port;
@@ -29,12 +28,6 @@ class KafkaClient {
     kafkaLogger.level = logger.level;
     kafkaLogger.onRecord.listen((log) {
       print(log.message);
-    });
-
-    _session.getMetadata().then((MetadataResponse resp) {
-      _validTopics = resp.topics.map((top) => top.topicName).toList();
-    }).catchError((e) {
-      logger.warning('Error retrieving Metadata', e);
     });
   }
 
@@ -51,13 +44,8 @@ class KafkaClient {
   }
 
   Stream<String> subscribe(String topic, List partitions) async* {
-    var topics = { topic : partitions };
+    var topics = { topic : partitions};
     logger.finest('Subscribing to: $topic');
-
-    if (!_validTopics.contains(topic)) {
-      logger.fine('Unable to subscribe, no such topic: $topic');
-      throw new StateError('No topic: $topic');
-    }
 
     print('About to try subscribbing');
     try {
@@ -70,6 +58,7 @@ class KafkaClient {
       }
     } catch (e) {
       logger.warning('Error subscribing', e);
+      rethrow;
     }
   }
 }
