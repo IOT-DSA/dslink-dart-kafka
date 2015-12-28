@@ -28,7 +28,7 @@ class KafkaClient {
     _cGroup = new ConsumerGroup(_session, 'kafkaDSLink$_randNum');
     kafkaLogger.level = logger.level;
     kafkaLogger.onRecord.listen((log) {
-      print(log.message);
+      print('[Kafka Logger]: ${log.message}');
     });
   }
 
@@ -44,45 +44,79 @@ class KafkaClient {
     _session.close();
   }
 
-  Stream<String> subscribe(String topic, List partitions) async* {
+  Stream<String> subscribe(String topic, List partitions, {bool done: false}) async* {
     var topics = { topic : partitions};
     logger.finest('Subscribing to: $topic');
 
-    print('About to try subscribbing');
+    try {
+      var metadata = await _session.getMetadata(topicNames: [topic], invalidateCache: true);
+      await new Future.delayed(new Duration(seconds: 3));
+    } catch (e, s) {
+      logger.fine('Error polling topic: $topic', e, s);
+    }
     try {
       var consumer = new Consumer(_session, _cGroup, topics, 360, 1);
       await for (MessageEnvelope env in consumer.consume()) {
         var value = new String.fromCharCodes(env.message.value);
         print('Received value: $value');
-        env.ack();
+        env.commit('dsLink');
         yield value;
       }
-    } catch (e) {
+    } on StateError catch (e) {
       logger.warning('Error subscribing', e);
-      rethrow;
+      if (!done) {
+        await new Future.delayed(new Duration(seconds: 3));
+        await for(var el in subscribe(topic, partitions, done: true)) {
+          yield el;
+        }
+      } else {
+        rethrow;
+      }
     }
   }
 
-  Future<Map> publish(String topic, int partition, String message) async {
+  Future<Map> publish(String topic, int partition, String message, {bool done: false}) async {
     if (_producer == null) {
       _producer = new Producer(_session, 1, 360);
     }
 
     var ret = {};
-    var result = await _producer.produce([
-      new ProduceEnvelope(topic, partition, [new Message(message.codeUnits)])
-    ]);
+    ProduceResult result;
 
-    if (result.hasErrors) {
+    try {
+      var metadata = await _session.getMetadata(
+          topicNames: [topic], invalidateCache: true);
+      await new Future.delayed(new Duration(seconds: 3));
+    } catch (e, s) {
+      logger.fine('Error polling metadata for topic: $topic', e, s);
+    }
+
+    try {
+      result = await _producer.produce([
+        new ProduceEnvelope(topic, partition, [new Message(message.codeUnits)])
+      ]);
+    } on StateError catch (e, s) {
+      logger.fine('Error in producing:', e, s);
+      if (!done) {
+        await new Future.delayed(new Duration(seconds: 3));
+        return publish(topic, partition, message, done: true);
+      } else {
+        result = null;
+      }
+    }
+
+    if (result == null || result.hasErrors) {
       ret['success'] = false;
-      ret['message'] = 'Publishing encountered an error';
+      ret['errMessage'] = 'Publishing encountered an error';
       logger.fine('Publish encountered errors');
-      result.responses.forEach((pr) {
-        logger.finest(pr.toString());
-      });
+      if(result != null ) {
+        result.responses.forEach((pr) {
+          logger.finest(pr.toString());
+        });
+      }
     } else {
       ret['success'] = true;
-      ret['message'] = 'Success';
+      ret['errMessage'] = 'Success';
     }
     return ret;
   }

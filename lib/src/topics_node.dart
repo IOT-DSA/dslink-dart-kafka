@@ -62,7 +62,7 @@ class RemoveTopicNode extends SimpleNode {
   RemoveTopicNode(String path) : super(path);
 
   @override
-  dynamic onInvoke(Map params) {
+  onInvoke(Map params) {
     provider.removeNode(parent.path);
   }
 }
@@ -135,7 +135,7 @@ class PublishMessage extends SimpleNode {
         'default' : false
       },
       {
-        'name' : 'message',
+        'name' : 'errMessage',
         'type' : 'string',
         'default' : ''
       }
@@ -147,7 +147,7 @@ class PublishMessage extends SimpleNode {
   @override
   Future<Map> onInvoke(Map<String, dynamic> params) async {
     if (params['topic'] == null || params['topic'].isEmpty) {
-      return {'success' : false, 'message' : 'Topic is required.'};
+      return {'success' : false, 'errMessage' : 'Topic is required.'};
     }
 
     var client = (parent as KafkaNode).client;
