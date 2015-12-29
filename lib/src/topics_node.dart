@@ -94,6 +94,8 @@ class TopicNode extends SimpleNode {
     _subscription = _client.subscribe(_topic, _partitions).listen((String val) {
       updateValue(val);
     }, onError: (e) {
+      updateValue(null);
+      _subscription.cancel();
     });
   }
 

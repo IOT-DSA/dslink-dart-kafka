@@ -3,4 +3,4 @@ description: Kafka DSLink
 dependencies:
   dslink: ^0.5.1
   kafka:
-    path: '/Users/matt/dglogik/src/dart-kafka'
+    git: https://github.com/butlermatt/dart-kafka.git

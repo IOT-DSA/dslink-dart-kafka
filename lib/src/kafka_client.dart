@@ -50,7 +50,7 @@ class KafkaClient {
 
     try {
       var metadata = await _session.getMetadata(topicNames: [topic], invalidateCache: true);
-      await new Future.delayed(new Duration(seconds: 3));
+      await new Future.delayed(new Duration(seconds: 5));
     } catch (e, s) {
       logger.fine('Error polling topic: $topic', e, s);
     }
@@ -65,13 +65,15 @@ class KafkaClient {
     } on StateError catch (e) {
       logger.warning('Error subscribing', e);
       if (!done) {
-        await new Future.delayed(new Duration(seconds: 3));
+        await new Future.delayed(new Duration(seconds: 5));
         await for(var el in subscribe(topic, partitions, done: true)) {
           yield el;
         }
       } else {
         rethrow;
       }
+    } on RangeError catch (e) {
+      await publish(topic, partitions[0], '');
     }
   }
 
