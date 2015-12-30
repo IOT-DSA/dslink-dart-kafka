@@ -151,24 +151,29 @@ class KafkaNode extends SimpleNode {
     PublishMessage.pathName : PublishMessage.definition(),
   };
 
-  KafkaClient client;
+  Future<KafkaClient> get client => _completer.future;
+  KafkaClient _client;
+  Completer<KafkaClient> _completer;
   LinkProvider link;
 
-  KafkaNode(this.link, String path) : super(path);
+  KafkaNode(this.link, String path) : super(path) {
+    _completer = new Completer<KafkaClient>();
+  }
 
   @override
   void onCreated() {
     var addr = getConfig(r'$$kafka_address');
     var port = int.parse(getConfig(r'$$kafka_port'));
 
-    client = new KafkaClient(addr, port);
+    _client = new KafkaClient(addr, port);
+    _completer.complete(_client);
   }
 
   void updateConfig(Map params) {
     configs[r'$$kafka_address'] = params['address'];
     configs[r'$$kafka_port'] = params['port'];
 
-    client = client.update(params['address'], int.parse(params['port']));
+    _client = _client.update(params['address'], int.parse(params['port']));
     link.save();
   }
 
@@ -179,6 +184,6 @@ class KafkaNode extends SimpleNode {
         node.onRemoving();
       }
     });
-    client.close();
+    _client.close();
   }
 }

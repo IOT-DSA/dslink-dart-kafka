@@ -76,6 +76,7 @@ class TopicNode extends SimpleNode {
     r'$$kafka_topic' : params['topic'],
     r'$$kafka_part' : params['part'],
     r'$type' : 'string',
+    r'$writable' : 'write',
     r'?value': '',
     RemoveTopicNode.pathName : RemoveTopicNode.definition()
   };
@@ -87,8 +88,8 @@ class TopicNode extends SimpleNode {
   TopicNode(String path) : super(path);
 
   @override
-  void onCreated() {
-    _client = (parent as KafkaNode).client;
+  onCreated() async {
+    _client = await (parent as KafkaNode).client;
 
     _topic = getConfig(r'$$kafka_topic');
     _partitions = getConfig(r'$$kafka_part');
@@ -99,6 +100,14 @@ class TopicNode extends SimpleNode {
       updateValue(null);
       _subscription.cancel();
     });
+  }
+
+  @override
+  bool onSetValue(String val) {
+    _client.publish(_topic, _partitions[0], val).then((result) {
+      print('SetValue: $result');
+    });
+    return false;
   }
 
   @override
@@ -154,7 +163,7 @@ class PublishMessage extends SimpleNode {
       return {'success' : false, 'errMessage' : 'Topic is required.'};
     }
 
-    var client = (parent as KafkaNode).client;
+    var client = await (parent as KafkaNode).client;
     var partition = int.parse(params['partition'], onError: (_) => 0);
 
     try {
