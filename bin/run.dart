@@ -18,7 +18,7 @@ Future main(List<String> args) async {
         PublishMessage.isType : (String path) => new PublishMessage(path),
         RemoveTopicNode.isType : (String path) => new RemoveTopicNode(path),
         TopicNode.isType : (String path) => new TopicNode(path),
-      }, encodePrettyJson: true);
+      });
 
   link.addNode('/${AddConnection.pathName}', AddConnection.definition());
   link.init();

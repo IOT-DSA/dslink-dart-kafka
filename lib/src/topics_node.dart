@@ -45,6 +45,7 @@ class AddTopic extends SimpleNode {
     var name = NodeNamer.createName(params['topic']);
     params['part'] = partitions;
     provider.addNode('$parPath/$name', TopicNode.definition(params));
+    (parent as KafkaNode).link.save();
   }
 }
 
@@ -64,6 +65,7 @@ class RemoveTopicNode extends SimpleNode {
   @override
   onInvoke(Map params) {
     provider.removeNode(parent.path);
+    (parent.parent as KafkaNode).link.save();
   }
 }
 
