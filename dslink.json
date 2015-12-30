@@ -4,7 +4,7 @@
   "description" : "Kafka DSLink",
   "main" : "bin/run.dart",
   "engines" : {
-    "dart" : ">1.13.0"
+    "dart" : ">1.11.0"
   },
   "getDependencies" : [
     "pub get"
